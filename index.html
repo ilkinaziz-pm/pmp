@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#230A49">
+<title>PMP Hazırlıq</title>
+<style>
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:#F7F4EF;color:#1A0837}
+.c{max-width:520px;margin:60px auto;padding:28px;border-radius:16px;background:#fff;box-shadow:0 6px 24px rgba(35,10,73,.12)}
+@media (max-width:560px){.c{margin:32px 16px}}
+.e{font-size:11px;font-weight:700;letter-spacing:1.4px;color:#05BFE0}
+h2{margin:8px 0 10px;color:#230A49}
+p{line-height:1.5;color:#4A4060}
+button{background:#FF630F;color:#fff;border:0;border-radius:999px;padding:10px 18px;font-weight:700;font-size:14px}
+.sp{width:28px;height:28px;margin-top:8px;border:3px solid #E8E2F3;border-top-color:#4F17A8;border-radius:50%;animation:r 1s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<!-- PMP kabineti (yükləyici). Burada tələbə məlumatı yoxdur: şəxsi açarla (#k=…) yalnız sahibinin nəticələri gətirilir. -->
+<div class="c" id="box"><div class="e">PMP HAZIRLIQ</div><h2>Yüklənir…</h2><p id="note">Nəticələrin gətirilir, bir neçə saniyə çəkə bilər.</p><div class="sp"></div></div>
+<script>
+(function () {
+  var API = 'https://script.google.com/macros/s/AKfycbze44qZcpDkwtDbHtW5sfqIzkTI1gs1NOTc0D18sNGtBoYCjddbQh6ujvrw9AdW6YCb/exec';
+  var m = (location.hash || '').match(/k=([0-9a-f]{32,64})/i) || (location.search || '').match(/k=([0-9a-f]{32,64})/i);
+  var k = m ? m[1] : '', LK = 'pmp_kab_' + k, LT = 'pmp_tpl';
+  window.addEventListener('hashchange', function () { location.reload(); });
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function get(key) { try { var s = localStorage.getItem(key); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+  function put(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+  function del(key) { try { localStorage.removeItem(key); } catch (e) {} }
+  var shown = false;
+  function msg(t, x, retry) {
+    var h = '<div class="e">PMP HAZIRLIQ</div><h2>' + t + '</h2><p>' + x + '</p>' + (retry ? '<button onclick="location.reload()">Yenidən cəhd et</button>' : '');
+    var box = document.getElementById('box');
+    if (box && !shown) { box.innerHTML = h; return; }
+    document.open(); document.write('<!doctype html><html lang="az"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PMP Hazırlıq</title><style>body{margin:0;font-family:Inter,system-ui,sans-serif;background:#F7F4EF}.c{max-width:520px;margin:32px auto;padding:28px;border-radius:16px;background:#fff}.e{font-size:11px;font-weight:700;letter-spacing:1.4px;color:#05BFE0}h2{color:#230A49}p{line-height:1.5;color:#4A4060}button{background:#FF630F;color:#fff;border:0;border-radius:999px;padding:10px 18px;font-weight:700}</style></head><body><div class="c">' + h + '</div></body></html>'); document.close();
+  }
+  function render(tpl, p) {
+    var json = JSON.stringify(p.data).replace(/</g, '\\u003c');
+    document.open(); document.write(tpl.replace('__DATA__', function () { return json; })); document.close();
+    if (p.title) document.title = p.title;
+    shown = true;
+  }
+  function toast() {
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;background:#230A49;color:#fff;padding:8px 8px 8px 16px;border-radius:999px;font:600 13px Inter,system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;white-space:nowrap');
+    d.innerHTML = 'Yeni nəticələr var <button style="background:#FF630F;color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px">Yenilə</button>';
+    d.querySelector('button').onclick = function () { location.reload(); };
+    (document.body || document.documentElement).appendChild(d);
+  }
+  function once(tv) {
+    var ctl = window.AbortController ? new AbortController() : null, t = setTimeout(function () { if (ctl) ctl.abort(); }, 35000);
+    return fetch(API + '?fmt=json&k=' + encodeURIComponent(k) + '&tv=' + encodeURIComponent(tv), { credentials: 'omit', redirect: 'follow', cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { clearTimeout(t); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+  function retry(tv, n, wait) {
+    return once(tv).catch(function (e) {
+      if (n <= 1) throw e;
+      return new Promise(function (res) { setTimeout(res, wait); }).then(function () { return retry(tv, n - 1, wait * 2); });
+    });
+  }
+  // --- Əsas yol: GitHub-dakı şifrəli fayl (sürətli). Açar yalnız linkdədir; fayl adı və şifrə ondan hesablanır. ---
+  var te = window.TextEncoder ? new TextEncoder() : null, KEYS = null;
+  function hkey(raw) { return crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']); }
+  function hm(key, data) { return crypto.subtle.sign('HMAC', key, data).then(function (b) { return new Uint8Array(b); }); }
+  function hex(b) { return Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
+  function keys() {
+    if (KEYS) return KEYS;
+    return (KEYS = hkey(te.encode(k)).then(function (kk) {
+      return Promise.all([hm(kk, te.encode('pmp-enc')), hm(kk, te.encode('pmp-mac')), hm(kk, te.encode('pmp-id'))]);
+    }).then(function (r) {
+      return Promise.all([hkey(r[0]), hkey(r[1])]).then(function (ks) { return { enc: ks[0], mac: ks[1], id: hex(r[2]).slice(0, 32) }; });
+    }));
+  }
+  function unseal(K, b64) {
+    var bin = atob(b64.replace(/\s+/g, '')), all = new Uint8Array(bin.length), i;
+    for (i = 0; i < bin.length; i++) all[i] = bin.charCodeAt(i);
+    var N = all.subarray(0, 16), C = all.subarray(16), jobs = [];
+    for (var b = 0; b * 32 < C.length; b++) {
+      var w = new Uint8Array(20); w.set(N); w[16] = (b >>> 24) & 255; w[17] = (b >>> 16) & 255; w[18] = (b >>> 8) & 255; w[19] = b & 255;
+      jobs.push(hm(K.enc, w));
+    }
+    return Promise.all(jobs).then(function (ks) {
+      var P = new Uint8Array(C.length);
+      for (var j = 0; j < C.length; j++) P[j] = C[j] ^ ks[j >> 5][j & 31];
+      return hm(K.mac, P).then(function (t) {
+        for (var q = 0; q < 16; q++) if (t[q] !== N[q]) throw new Error('fayl yoxlanışdan keçmədi');
+        return JSON.parse(new TextDecoder().decode(P));
+      });
+    });
+  }
+  function staticGet() {
+    if (!te || !window.crypto || !crypto.subtle) return Promise.reject(new Error('brauzer dəstəkləmir'));
+    var stamp = Math.floor(Date.now() / 60000);
+    return keys().then(function (K) {
+      return fetch('d/' + K.id + '.json?t=' + stamp, { cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (b64) { return unseal(K, b64); });
+    }).then(function (p) {
+      if (!p || !p.data) throw new Error('boş fayl');
+      if (T && T.tpl && T.tv === p.tv) return p;
+      return fetch('t/' + encodeURIComponent(p.tv) + '.html').then(function (r) { if (!r.ok) throw new Error('şablon ' + r.status); return r.text(); })
+        .then(function (tpl) { p.tpl = tpl; return p; });
+    });
+  }
+  function getData() { return staticGet().catch(function () { return retry(T && T.tv || '', 3, 1500); }); }
+  if (!k) { msg('Şəxsi linkini aç', 'Kabinet şəxsi linklə açılır. Gmail-ində «PMP: şəxsi kabinet linkin» məktubunu tap və «Kabinetimi aç» düyməsini bas. Məktub yoxdursa, müəllimə yaz.'); return; }
+  var T = get(LT), C = get(LK);
+  // Səhifə tam qurulandan sonra başla (əks halda document.open köhnə səhifəni silmir)
+  function start() {
+  if (T && T.tpl && C && C.data) render(T.tpl, C);   // dərhal: telefonda saxlanmış son nəticələr
+  else setTimeout(function () { var n = document.getElementById('note'); if (n) n.textContent = 'Bir az çəkir — server oyanır. Növbəti dəfə dərhal açılacaq.'; }, 6000);
+  getData().then(function (p) {
+    if (p && p.data) {
+      var newTpl = false;
+      if (p.tpl) { T = { tv: p.tv, tpl: p.tpl }; put(LT, T); newTpl = true; }
+      var D = { data: p.data, title: p.title }; put(LK, D);
+      if (!shown) { if (T && T.tpl) render(T.tpl, D); else msg('Bir problem yarandı', 'Səhifə tam yüklənmədi.', true); }
+      else if (newTpl || !C || p.data.updated !== C.data.updated) toast();
+      return;
+    }
+    if (p && p.error === 'badlink') { del(LK); msg('Link işləmir', 'Bu link yanlışdır və ya köhnəlib. Ən son «PMP» məktubundakı «Kabinetimi aç» düyməsini bas və ya müəllimdən yeni link istə.'); return; }
+    if (shown) return;
+    if (p && p.error === 'nofile') msg('Error Log faylın tapılmadı', 'Müəllimə yaz: «' + esc(p.name) + '» adlı Error Log faylı tapılmadı.');
+    else msg('Bir problem yarandı', 'Bir az sonra yenidən cəhd et. Problem davam etsə, müəllimə yaz.' + (p && p.message ? '<br><small>' + esc(p.message) + '</small>' : ''), true);
+  }).catch(function (e) {
+    if (shown) return;
+    msg('Bağlantı alınmadı', 'İnterneti yoxla və yenidən cəhd et. Problem davam etsə, müəllimə yaz.<br><small>' + esc(e && e.message) + '</small>', true);
+  });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
+</body>
+</html>
